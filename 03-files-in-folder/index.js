@@ -1,29 +1,29 @@
 const path = require('path');
-const fs = require('fs/promises');
+const {readdir} = require('fs/promises');
+const {stat} = require('fs');
 const {stdout} = process;
 const pathToFolder = path.join(__dirname, 'secret-folder');
 
-fs.stat('D:\\basic-js\\HTML-builder\\03-files-in-folder\\secret-folder\\text.txt', (err, stats)=>{
-  if(err) console.log('err');
-  console.log(stats.size);
-});
-
 async function filesInfo(){
-  fs.readdir(pathToFolder, {withFileTypes: true}).then((folder)=>{
-    let fileSize;
-    let filePath;
-
+  try{
+    const folder = await readdir(pathToFolder, {withFileTypes: true, encoding: 'utf-8'});
     for(const file of folder){
       if(file.isFile()){
-        filePath = path.resolve(path.join(pathToFolder, file.name));
-        fs.stat( filePath, (err, stats)=>{
-          if(err) stdout.write('err');
-          fileSize = stats.size;
+        stat(pathToFolder+`\\${file.name}`, (err, stats) => {
+          if(err){
+            console.log(err);
+          }
+          else{
+            stdout.write(`${path.basename(file.name, path.extname(file.name))} - ${path.extname(file.name).slice(1)} - ${stats.size} byte \n'`);
+          }
         });
-        stdout.write(`${path.basename(file.name, path.extname(file.name))} - ${path.extname(file.name).slice(1)} - ${fileSize} \n`);
+       
       }
     }
-  });
+  }
+  catch (err){
+    stdout.write('error');
+  }  
 }
 
 filesInfo();
