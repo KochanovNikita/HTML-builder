@@ -14,7 +14,7 @@ async function filesInfo(){
             console.log(err);
           }
           else{
-            stdout.write(`${path.basename(file.name, path.extname(file.name))} - ${path.extname(file.name).slice(1)} - ${stats.size} byte \n'`);
+            stdout.write(`${path.basename(file.name, path.extname(file.name))} - ${path.extname(file.name).slice(1)} - ${stats.size} byte \n`);
           }
         });
        
