@@ -2,6 +2,8 @@ const {stdin, stdout} = process;
 const fs = require('fs/promises');
 const path = require('path');
 
+stdout.write('Можете начать вводить сообщения: \n');
+
 async function addText(text){
   fs.appendFile(
     path.join(__dirname, 'text.txt'),
@@ -18,3 +20,6 @@ stdin.on('data', (data)=>{
 });
 
 process.on('exit', () => stdout.write('Конец записи файла.'));
+process.on('SIGINT', () => {
+  process.exit();
+});
