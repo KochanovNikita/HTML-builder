@@ -17,4 +17,4 @@ stdin.on('data', (data)=>{
   stringData.startsWith('exit') ? process.exit() : addText(stringData);
 });
 
-process.on('exit', () => stdout.write('end.'));
+process.on('exit', () => stdout.write('Конец записи файла.'));
