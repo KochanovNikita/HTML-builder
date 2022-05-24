@@ -1,5 +1,5 @@
 const path = require('path');
-const {stat, mkdir, unlink} = require('fs');
+const {stat, mkdir, unlink, ReadStream} = require('fs');
 const {readdir, appendFile} = require('fs/promises');
 const {createReadStream} = require('node:fs');
 const {copyFile} = require('node:fs/promises');
@@ -67,6 +67,7 @@ async function createIndexHTML(){
       replaceHeader(template);
     }
   });
+  createBundleFile();
 }
 
 async function copyFolder(pathToDir){
@@ -74,10 +75,10 @@ async function copyFolder(pathToDir){
     const folder = await readdir(pathToDir, {withFileTypes: true});
     for(const file of folder){
       if(file.isDirectory()){
-        createFolder(pathToDir.replace('assets', 'project-dist') + `\\${file.name}`, pathToDir + `\\${file.name}`);
+        createFolder(pathToDir.replace('assets', 'project-dist\\assets') + `\\${file.name}`, pathToDir + `\\${file.name}`);
         copyFolder(pathToDir + `\\${file.name}`);
       }else if(file.isFile()){
-        copyFile(pathToDir + `\\${file.name}`,pathToDir.replace('assets', 'project-dist') + `\\${file.name}`);
+        copyFile(pathToDir + `\\${file.name}`, pathToDir.replace('assets', 'project-dist\\assets')  + `\\${file.name}`);
       }
     }
   }catch(err){
@@ -91,7 +92,9 @@ function createFolder(distpath, copypath){
     if(err){
       stdout.write('не создал');
     }
-    copyFolder(copypath);
+    if(copypath){
+      copyFolder(copypath);
+    }
   });
 }
 
@@ -108,10 +111,35 @@ async function removeAllFilesinFolder(folderpath){
   }
 }
 
+async function addStyles(style){
+  appendFile(path.join(__dirname, 'project-dist', 'style.css'),
+    style,
+    err => {
+      if(err) console.log(err);
+    }
+  );
+}
+
+async function createBundleFile(){
+  const files = await readdir(path.join(__dirname, 'styles'), {withFileTypes: true, encoding: 'utf-8'});
+  for(const file of files.reverse()){
+    if(file.isFile() && path.extname(file.name) == '.css'){
+      const stream = ReadStream(path.join(__dirname, 'styles', file.name));
+      stream.on('readable', ()=>{
+        let data = stream.read();
+        if(data !== null){
+          addStyles(data);
+        }
+      });
+    }
+  }
+}
+
 async function createSolution(){
   stat(distPath, (err, stats) => {
     if(err){
       createFolder(distPath, assetsPath);
+      createFolder(distPath+'\\assets');
       createIndexHTML();
     }else{
       if(stats.isDirectory()){
@@ -120,6 +148,7 @@ async function createSolution(){
         createIndexHTML();
       }else{
         createFolder(distPath, assetsPath);
+        createFolder(distPath+'\\assets');
         createIndexHTML();
       }
     }
