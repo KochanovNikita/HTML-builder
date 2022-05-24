@@ -8,53 +8,28 @@ const componentsPath = path.join(__dirname, 'components');
 const distPath = path.join(__dirname, 'project-dist');
 const assetsPath = path.join(__dirname, 'assets');
 
-//уважаемый проверяющий, если у вас есть возможность, не проверяйте это задание и не ставьте оценку до вечера среды,
-//контакты для связи: telegrem - @pieliedie3x, discord - halva#1696 \ (kochanovnikita)
-
-async function replaceFooter(template){
-  let footer = '';
-  const stream = createReadStream(componentsPath + '\\footer.html', {encoding: 'utf-8'});
-
-  stream.on('readable', () => {
-    let data = stream.read();
-    if(typeof data === 'string'){
-      footer = data;
-      template = template.replace('{{footer}}', footer);
-      appendFile(distPath+'\\index.html',
-        template,
-        err => {
-          if(err) stdout.write('error');
+async function replaceElement(template){
+  const files = await readdir(componentsPath, {withFileTypes: true});
+  for(const file of files){
+    if(file.isFile() && path.extname(file.name) == '.html'){
+      let section = path.basename(file.name, path.extname(file.name));
+      if(template.includes('{{' + section + '}}')){
+        const stream = createReadStream(componentsPath + `\\${file.name}`, {encoding: 'utf-8'});
+        stream.on('readable', () => {
+          let data = stream.read();
+          if(typeof data === 'string'){
+            template = template.replace('{{' + section + '}}', data);
+            appendFile(distPath+'\\index.html',
+              template,
+              {flag: 'w'},
+              err => {
+                if(err) stdout.write('error');
+              });   
+          }
         });
+      }
     }
-  });
-}
-
-async function replaceArticles(template){
-  let articles = '';
-  const stream = createReadStream(componentsPath + '\\articles.html', {encoding: 'utf-8'});
-
-  stream.on('readable', () => {
-    let data = stream.read();
-    if(typeof data === 'string'){
-      articles = data;
-      template = template.replace('{{articles}}', articles);
-      replaceFooter(template);
-    }
-  });
-}
-
-async function replaceHeader(template){
-  let header = '';
-  const stream = createReadStream(componentsPath + '\\header.html', {encoding: 'utf-8'});
-
-  stream.on('readable', () => {
-    let data = stream.read();
-    if(typeof data === 'string'){
-      header = data;
-      template = template.replace('{{header}}', header);
-      replaceArticles(template);
-    }
-  });
+  }
 }
 
 async function createIndexHTML(){
@@ -64,7 +39,7 @@ async function createIndexHTML(){
     let data = stream.read();
     if(typeof data === 'string'){
       template = data;
-      replaceHeader(template);
+      replaceElement(template);
     }
   });
   createBundleFile();
