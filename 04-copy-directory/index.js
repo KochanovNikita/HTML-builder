@@ -1,6 +1,6 @@
 const {stdout} = process;
 const {readdir} = require('fs/promises');
-const {stat, rmdir, mkdir, unlink} = require('fs');
+const {stat, mkdir, unlink} = require('fs');
 const {copyFile} = require('node:fs/promises');
 const path = require('path');
 const pathToFolderCopy = path.join(__dirname, 'copy folder');
@@ -19,21 +19,11 @@ async function copyFolder(){
 }
 
 function createFolder(){
-  mkdir(pathToFolderCopy, (err) => {
+  mkdir(pathToFolderCopy, {recursive: true}, (err) => {
     if(err){
       stdout.write('не создал');
     }
     copyFolder();
-  });
-}
-
-function removeFolder(){
-  rmdir(pathToFolderCopy, (err)=>{
-    if(err){
-      stdout.write('не удалил\n');
-    }else{
-      createFolder();
-    }
   });
 }
 
@@ -44,10 +34,10 @@ async function removeAllFilesinFolder(){
       if(err) stdout.write('не удаляет файл ' + file.name + '\n');
     });
   }
-  removeFolder();
+  copyFolder();
 }
 
-async function folderExists(){
+async function copyDir(){
   stat(pathToFolderCopy, (err, stats) => {
     if(err){
       createFolder();
@@ -61,4 +51,4 @@ async function folderExists(){
   });
 }
 
-folderExists();
+copyDir();
