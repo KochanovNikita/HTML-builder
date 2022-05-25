@@ -49,6 +49,8 @@ async function copyFileCustom(src, dist){
     if(err){
       if(err.code === 'ENOENT'){
         copyFileCustom(src, dist);
+      }else if(err.code === 'EBUSY'){
+        copyFileCustom(src, dist);
       }else{
         console.log(err);
       }
