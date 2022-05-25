@@ -1,8 +1,7 @@
 const path = require('path');
-const {stat, mkdir, unlink, ReadStream} = require('fs');
+const {stat, mkdir, ReadStream, rm, unlink, copyFile} = require('fs');
 const {readdir, appendFile} = require('fs/promises');
 const {createReadStream} = require('node:fs');
-const {copyFile} = require('node:fs/promises');
 const {stdout} = process;
 const componentsPath = path.join(__dirname, 'components');
 const distPath = path.join(__dirname, 'project-dist');
@@ -27,7 +26,6 @@ async function replaceElement(template){
               });   
           }
         });
-        createBundleFile(section);
       }
     }
   }
@@ -43,22 +41,30 @@ async function createIndexHTML(){
       replaceElement(template);
     }
   });
+  createBundleFile();
+}
+
+async function copyFileCustom(src, dist){
+  copyFile(src, dist, (err)=>{
+    if(err){
+      if(err.code === 'ENOENT'){
+        copyFileCustom(src, dist);
+      }else{
+        console.log(err);
+      }
+    }
+  });
 }
 
 async function copyFolder(pathToDir){
-  try{
-    const folder = await readdir(pathToDir, {withFileTypes: true});
-    for(const file of folder){
-      if(file.isDirectory()){
-        createFolder(pathToDir.replace('assets', 'project-dist\\assets') + `\\${file.name}`, pathToDir + `\\${file.name}`);
-        copyFolder(pathToDir + `\\${file.name}`);
-      }else if(file.isFile()){
-        copyFile(pathToDir + `\\${file.name}`, pathToDir.replace('assets', 'project-dist\\assets')  + `\\${file.name}`);
-      }
+  const folder = await readdir(pathToDir, {withFileTypes: true});
+  for(const file of folder){
+    if(file.isDirectory()){
+      createFolder(pathToDir.replace('assets', 'project-dist\\assets') + `\\${file.name}`, pathToDir + `\\${file.name}`);
+      copyFolder(pathToDir + `\\${file.name}`);
+    }else if(file.isFile()){
+      copyFileCustom(pathToDir + `\\${file.name}`, pathToDir.replace('assets', 'project-dist\\assets')  + `\\${file.name}`);
     }
-  }catch(err){
-    stdout.write('не копирует\n');
-    console.log(err);
   }
 }
 
@@ -73,17 +79,21 @@ function createFolder(distpath, copypath){
   });
 }
 
-async function removeAllFilesinFolder(folderpath){
-  const files = await readdir(folderpath, {withFileTypes: true});
+async function removeFolder(){
+  const files = await readdir(distPath, {withFileTypes: true});
   for (const file of files){
-    if(file.isDirectory()){
-      removeAllFilesinFolder(folderpath+`\\${file.name}`);
-    }else if(file.isFile()){
-      unlink((folderpath + '\\' + file.name), err =>{
+    if(file.isFile()){
+      unlink((distPath + '\\' + file.name), err =>{
         if(err) stdout.write('не удаляет файл ' + file.name + '\n');
       });
     }
   }
+  rm(path.join(__dirname, 'project-dist'), { recursive: true }, (err)=>{
+    if(err) console.log(err);
+    else{
+      createSolution();
+    }
+  });
 }
 
 async function addStyles(style){
@@ -95,10 +105,10 @@ async function addStyles(style){
   );
 }
 
-async function createBundleFile(section){
+async function createBundleFile(){
   const files = await readdir(path.join(__dirname, 'styles'), {withFileTypes: true, encoding: 'utf-8'});
-  for(const file of files){
-    if(file.isFile() && path.extname(file.name) == '.css' && file.name == section+'.css'){
+  for(const file of files.reverse()){
+    if(file.isFile() && path.extname(file.name) == '.css'){
       const stream = ReadStream(path.join(__dirname, 'styles', file.name));
       stream.on('readable', ()=>{
         let data = stream.read();
@@ -118,9 +128,7 @@ async function createSolution(){
       createIndexHTML();
     }else{
       if(stats.isDirectory()){
-        removeAllFilesinFolder(distPath);
-        copyFolder(assetsPath);
-        createIndexHTML();
+        removeFolder();
       }else{
         createFolder(distPath, assetsPath);
         createFolder(distPath+'\\assets');
