@@ -10,7 +10,7 @@ const assetsPath = path.join(__dirname, 'assets');
 
 async function replaceElement(template){
   const files = await readdir(componentsPath, {withFileTypes: true});
-  for(const file of files){
+  for(const file of files.reverse()){
     if(file.isFile() && path.extname(file.name) == '.html'){
       let section = path.basename(file.name, path.extname(file.name));
       if(template.includes('{{' + section + '}}')){
@@ -27,6 +27,7 @@ async function replaceElement(template){
               });   
           }
         });
+        createBundleFile(section);
       }
     }
   }
@@ -42,7 +43,6 @@ async function createIndexHTML(){
       replaceElement(template);
     }
   });
-  createBundleFile();
 }
 
 async function copyFolder(pathToDir){
@@ -95,10 +95,10 @@ async function addStyles(style){
   );
 }
 
-async function createBundleFile(){
+async function createBundleFile(section){
   const files = await readdir(path.join(__dirname, 'styles'), {withFileTypes: true, encoding: 'utf-8'});
-  for(const file of files.reverse()){
-    if(file.isFile() && path.extname(file.name) == '.css'){
+  for(const file of files){
+    if(file.isFile() && path.extname(file.name) == '.css' && file.name == section+'.css'){
       const stream = ReadStream(path.join(__dirname, 'styles', file.name));
       stream.on('readable', ()=>{
         let data = stream.read();
