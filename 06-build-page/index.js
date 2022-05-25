@@ -1,5 +1,5 @@
 const path = require('path');
-const {stat, mkdir, ReadStream, unlink, copyFile, rm} = require('fs');
+const {stat, mkdir, ReadStream, copyFile, rm} = require('fs');
 const {readdir, appendFile} = require('fs/promises');
 const {createReadStream} = require('node:fs');
 const {stdout} = process;
