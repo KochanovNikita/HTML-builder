@@ -1,5 +1,5 @@
 const path = require('path');
-const {stat, mkdir, ReadStream, rm, unlink, copyFile} = require('fs');
+const {stat, mkdir, ReadStream, unlink, copyFile, rm} = require('fs');
 const {readdir, appendFile} = require('fs/promises');
 const {createReadStream} = require('node:fs');
 const {stdout} = process;
@@ -82,17 +82,8 @@ function createFolder(distpath, copypath){
 }
 
 async function removeFolder(){
-  const files = await readdir(distPath, {withFileTypes: true});
-  for (const file of files){
-    if(file.isFile()){
-      unlink((distPath + '\\' + file.name), err =>{
-        if(err) stdout.write('не удаляет файл ' + file.name + '\n');
-      });
-    }
-  }
-  rm(path.join(__dirname, 'project-dist'), { recursive: true }, (err)=>{
-    if(err) console.log(err);
-    else{
+  await rm(path.join(__dirname, 'project-dist'), {recursive: true, force: true}, (err)=>{
+    if(!err){
       createSolution();
     }
   });
